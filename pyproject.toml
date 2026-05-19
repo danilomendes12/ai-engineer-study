@@ -1,7 +1,7 @@
 [project]
 name = "ai-engineer-study"
 version = "0.1.0"
-description = "Add your description here"
+description = "Personal study repo for AI engineering — experiments with LLM SDKs (Anthropic, OpenAI)."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
@@ -21,6 +21,50 @@ dev = [
 
 [tool.ruff]
 target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D",       # pydocstyle — não exigimos docstrings em scripts de estudo
+    "COM812",  # conflita com o formatter
+    "ISC001",  # conflita com o formatter
+    "CPY",     # flake8-copyright — sem cabeçalho de copyright
+    "T201",    # permite print() em experimentos
+    "T203",    # permite pprint() em experimentos
+    "INP001",  # não exigir __init__.py em todo lugar
+    "ERA001",  # permite código comentado em scripts exploratórios
+    "FIX",     # permite TODO/FIXME sem falhar
+    "TD",      # idem — formato livre de TODOs
+]
+
+[tool.ruff.lint.per-file-ignores]
+"main.py" = ["S101"]  # asserts permitidos no scratch entry point
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+docstring-code-format = true
 
 [tool.mypy]
 python_version = "3.14"
+strict = true
+warn_unreachable = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+disallow_any_generics = true
+disallow_any_unimported = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+disallow_untyped_calls = true
+check_untyped_defs = true
+no_implicit_optional = true
+no_implicit_reexport = true
+strict_equality = true
+extra_checks = true
+pretty = true
+show_error_codes = true
+show_column_numbers = true

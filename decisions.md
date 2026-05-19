@@ -1,28 +1,39 @@
 # Decisões de Stack
 
-Registro das escolhas técnicas do projeto e o motivo de cada uma.
+Seis decisões técnicas que definem este repositório e a justificativa de cada uma.
 
-## Linguagem & runtime
+## 1. Python 3.14 como runtime
 
-- **Python 3.14** — versão fixada em `.python-version` e exigida em `pyproject.toml` (`requires-python = ">=3.14"`). Última versão estável, traz melhorias de tipagem e performance úteis para experimentos com LLMs.
+Fixado em `.python-version` e exigido em `pyproject.toml` (`requires-python = ">=3.14"`).
 
-## Gerenciamento de dependências
+**Por quê:** é a versão estável mais recente no momento da criação do repo, traz melhorias significativas no sistema de tipos (PEP 695, `TypeIs`) e no interpretador (subinterpretadores, JIT experimental). Como o repo é de estudo, faz sentido aprender já com a versão moderna em vez de carregar workarounds de versões antigas.
 
-- **uv** — gerenciador de pacotes e ambiente virtual. Escolhido pela velocidade (resolução e instalação muito mais rápidas que pip/poetry), lockfile determinístico (`uv.lock`) e suporte nativo a `dependency-groups`. Substitui pip + venv + pip-tools em uma única ferramenta.
+## 2. uv como gerenciador de pacotes e ambiente
 
-## Qualidade de código
+Substitui pip + venv + pip-tools por um único binário.
 
-- **ruff** — linter e formatador. Um único binário (escrito em Rust) substitui flake8, isort, black e mais. Configurado para `target-version = "py314"`.
-- **mypy** — checagem estática de tipos. Garante segurança de tipos nos experimentos; configurado para `python_version = "3.14"`.
-- **pre-commit** — executa `ruff check --fix`, `ruff format` e `mypy` automaticamente antes de cada commit, impedindo que código fora do padrão entre no histórico.
+**Por quê:** resolução e instalação ordens de magnitude mais rápidas (escrito em Rust), lockfile determinístico (`uv.lock`) versionado, suporte nativo a `dependency-groups` do PEP 735 (separa `dev` de runtime sem extras hacks) e gerencia também a versão do Python. Para um repo onde recrio ambientes com frequência, a velocidade importa.
 
-## Bibliotecas de aplicação (LLM)
+## 3. ruff em modo estrito para lint e formatação
 
-- **anthropic** — SDK oficial para a API da Anthropic (modelos Claude). Foco principal de estudo.
-- **openai** — SDK oficial da OpenAI, para comparação e exercícios multi-provedor.
-- **tiktoken** — tokenizer da OpenAI, usado para contar/analisar tokens em prompts e respostas.
-- **python-dotenv** — carrega variáveis de ambiente de um arquivo `.env` (gitignorado), mantendo chaves de API fora do código e do controle de versão.
+Único binário substitui flake8, isort, black, pyupgrade, bandit e outros.
 
-## Organização do projeto
+**Por quê:** configurado com seleção ampla de regras (`ALL` menos algumas categorias incompatíveis com código de estudo), `target-version = "py314"`. Modo estrito força código idiomático desde o começo — para um repo de aprendizado, é melhor ser corrigido cedo do que repetir hábitos ruins. Sendo escrito em Rust, roda em milissegundos, então o atrito é baixo.
 
-- **Layout `src/`** — experimentos ficam em `src/`, agrupados por tópico (um subdiretório por assunto). `main.py` na raiz serve como ponto de entrada de rascunho. Mantém código de estudo isolado e fácil de descartar.
+## 4. mypy em modo estrito para checagem de tipos
+
+`strict = true` ativado, sem `Any` implícito, sem definições não tipadas.
+
+**Por quê:** SDKs de LLM lidam com payloads complexos (mensagens, tool calls, streaming) e tipagem rigorosa é o que evita confusão sobre formato de resposta. Em modo estrito, mypy obriga anotar tudo e captura erros que passariam silenciosamente. Como é estudo, vale o custo extra de digitar tipos para construir o hábito.
+
+## 5. pre-commit como porteiro de qualidade
+
+Hooks rodam `ruff check --fix`, `ruff format` e `mypy` antes de cada commit.
+
+**Por quê:** garante que nenhum commit entra no histórico violando as regras dos itens 3 e 4 — não depende de lembrar de rodar os checks manualmente. Evita que o repo acumule dívida de lint/tipos. Instalado uma vez com `uv run pre-commit install` e segue automático.
+
+## 6. Layout `src/` por tópico + `.env` para segredos
+
+Cada experimento vive em `src/<tópico>/` (ex.: `src/hello_world/`); chaves de API ficam em `.env` gitignorado, carregadas com `python-dotenv`.
+
+**Por quê:** o repo é coleção de experimentos, não aplicação única — separar por pasta deixa cada estudo isolado e descartável sem acoplamento. `.env` + `python-dotenv` mantém `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` fora do controle de versão, com `.env.example` documentando quais variáveis são esperadas.

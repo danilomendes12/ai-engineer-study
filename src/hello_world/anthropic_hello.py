@@ -1,17 +1,3 @@
-"""Hello world da API da Anthropic com tracing no LangSmith.
-
-Faz uma chamada a ``messages.create`` e imprime tokens de entrada/saida,
-custo estimado em USD e latencia da requisicao.
-
-Execucao:
-    uv run python src/hello_world/anthropic_hello.py
-
-Variaveis de ambiente (ver .env.example):
-    ANTHROPIC_API_KEY   chave da API da Anthropic
-    LANGSMITH_API_KEY   chave do LangSmith (free tier)
-    LANGSMITH_TRACING   "true" para enviar traces ao LangSmith
-"""
-
 import time
 
 from anthropic import Anthropic
@@ -35,10 +21,7 @@ PRICE_PER_MTOK: dict[str, dict[str, float]] = {
 def calc_cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
     """Calcula o custo da chamada a partir dos tokens consumidos."""
     price = PRICE_PER_MTOK[model]
-    return (
-        input_tokens / 1_000_000 * price["input"]
-        + output_tokens / 1_000_000 * price["output"]
-    )
+    return input_tokens / 1_000_000 * price["input"] + output_tokens / 1_000_000 * price["output"]
 
 
 def main() -> None:
