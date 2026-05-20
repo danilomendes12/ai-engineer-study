@@ -8,6 +8,8 @@ dependencies = [
     "anthropic",
     "langsmith>=0.8.5",
     "openai",
+    "pgvector",
+    "psycopg[binary]",
     "python-dotenv",
     "tiktoken",
     "transformers",
