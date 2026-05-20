@@ -1,6 +1,6 @@
 # Decisões de Stack
 
-Sete decisões técnicas que definem este repositório e a justificativa de cada uma.
+Oito decisões técnicas que definem este repositório e a justificativa de cada uma.
 
 ## 1. Python 3.12 como runtime
 
@@ -45,3 +45,9 @@ Cada experimento vive em `src/<tópico>/` (ex.: `src/hello_world/`); chaves de A
 O SDK `anthropic` é o foco do estudo; `openai` permanece como provider secundário para comparação.
 
 **Por quê:** o objetivo do repo é aprofundar em engenharia de IA, e a Anthropic publica a documentação mais densa sobre os fundamentos práticos (prompt caching, tool use, extended thinking, citations, agentes). Os modelos Claude 4.x (Opus 4.7, Sonnet 4.6, Haiku 4.5) cobrem o espectro de custo/latência/capacidade necessário para experimentos. OpenAI fica para benchmarks lado-a-lado e para entender as diferenças de API entre os dois provedores principais — não para ser o caminho padrão.
+
+## 8. pgvector como vector store padrão
+
+Extensão `vector` do Postgres acessada via `pgvector` + `psycopg` (ver `src/hello_world/pgvector_hello.py`).
+
+**Por quê:** experimentos com embeddings precisam de um lugar para armazenar e consultar vetores por similaridade, e adicionar um banco vetorial dedicado (Pinecone, Weaviate, Qdrant) introduz mais um serviço para subir, autenticar e manter — atrito alto para um repo de estudo. pgvector roda dentro de qualquer Postgres local com `CREATE EXTENSION vector`, oferece os operadores essenciais (`<=>` cosine, `<->` L2, `<#>` inner product) e índices ANN (HNSW, IVFFlat) suficientes para entender os trade-offs de recall/latência sem sair de SQL. Como Postgres já é ferramenta universal, a curva de aprendizado fica no que importa (embeddings e busca vetorial), não em mais uma API proprietária.
