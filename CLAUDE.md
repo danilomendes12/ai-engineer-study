@@ -8,7 +8,7 @@ A personal learning/study repository for AI engineering. Code here consists of s
 
 ## Environment & commands
 
-This project uses **uv** as the package manager and Python **3.14**.
+This project uses **uv** as the package manager and Python **3.12**.
 
 - Install/sync dependencies: `uv sync`
 - Run a script: `uv run python <path>` (e.g. `uv run python main.py`)
@@ -23,5 +23,7 @@ There is no test framework configured yet. If adding tests, wire up pytest in `p
 ## Conventions
 
 - New experiments go under `src/`, grouped into a subdirectory per topic (see `src/hello_world/`). `main.py` at the repo root is a standalone scratch entry point.
-- pre-commit runs `ruff check --fix`, `ruff format`, and `mypy` on every commit — code must pass all three.
-- API keys are loaded from a gitignored `.env` (use `python-dotenv`). Copy `.env.example` and fill in `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`. Never hardcode keys.
+- pre-commit runs `ruff check --fix`, `ruff format`, and `mypy` (all in strict mode) on every commit — code must pass all three.
+- GitHub Actions CI runs ruff + mypy on every push and PR — see `.github/workflows/ci.yml`.
+- API keys are loaded from a gitignored `.env` (use `python-dotenv`). Copy `.env.example` and fill in `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `LANGSMITH_API_KEY`. Never hardcode keys.
+- **Anthropic (Claude) is the primary LLM provider**; OpenAI is kept around only for comparison. Default new experiments to the `anthropic` SDK unless the exercise is explicitly cross-provider.

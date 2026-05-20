@@ -1,12 +1,14 @@
 # Decisões de Stack
 
-Seis decisões técnicas que definem este repositório e a justificativa de cada uma.
+Sete decisões técnicas que definem este repositório e a justificativa de cada uma.
 
-## 1. Python 3.14 como runtime
+## 1. Python 3.12 como runtime
 
-Fixado em `.python-version` e exigido em `pyproject.toml` (`requires-python = ">=3.14"`).
+Fixado em `.python-version` e exigido em `pyproject.toml` (`requires-python = ">=3.12"`).
 
-**Por quê:** é a versão estável mais recente no momento da criação do repo, traz melhorias significativas no sistema de tipos (PEP 695, `TypeIs`) e no interpretador (subinterpretadores, JIT experimental). Como o repo é de estudo, faz sentido aprender já com a versão moderna em vez de carregar workarounds de versões antigas.
+**Por quê:** versão estável amplamente suportada por ferramentas, SDKs e GitHub Actions runners. Traz `type`-aliases (PEP 695), melhorias de performance em `asyncio` e mensagens de erro mais úteis — suficiente para experimentos com LLMs sem entrar em território instável.
+
+**Decisão prévia revertida:** inicialmente o repo foi configurado em **Python 3.14**. Foi revertido para 3.12 porque parte do ecossistema (algumas extensões nativas e ferramentas auxiliares) ainda não tem wheels estáveis para 3.14, o que aumenta atrito a cada `uv sync` e exige fallback para builds locais. Em um repo de estudo, a fricção operacional importa mais do que recursos de linguagem novos.
 
 ## 2. uv como gerenciador de pacotes e ambiente
 
@@ -18,7 +20,7 @@ Substitui pip + venv + pip-tools por um único binário.
 
 Único binário substitui flake8, isort, black, pyupgrade, bandit e outros.
 
-**Por quê:** configurado com seleção ampla de regras (`ALL` menos algumas categorias incompatíveis com código de estudo), `target-version = "py314"`. Modo estrito força código idiomático desde o começo — para um repo de aprendizado, é melhor ser corrigido cedo do que repetir hábitos ruins. Sendo escrito em Rust, roda em milissegundos, então o atrito é baixo.
+**Por quê:** configurado com `select = ["ALL"]` (apenas categorias incompatíveis com scripts de estudo ignoradas), `target-version = "py312"`. Modo estrito força código idiomático desde o começo — para um repo de aprendizado, é melhor ser corrigido cedo do que repetir hábitos ruins. Sendo escrito em Rust, roda em milissegundos, então o atrito é baixo.
 
 ## 4. mypy em modo estrito para checagem de tipos
 
@@ -36,4 +38,10 @@ Hooks rodam `ruff check --fix`, `ruff format` e `mypy` antes de cada commit.
 
 Cada experimento vive em `src/<tópico>/` (ex.: `src/hello_world/`); chaves de API ficam em `.env` gitignorado, carregadas com `python-dotenv`.
 
-**Por quê:** o repo é coleção de experimentos, não aplicação única — separar por pasta deixa cada estudo isolado e descartável sem acoplamento. `.env` + `python-dotenv` mantém `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` fora do controle de versão, com `.env.example` documentando quais variáveis são esperadas.
+**Por quê:** o repo é coleção de experimentos, não aplicação única — separar por pasta deixa cada estudo isolado e descartável sem acoplamento. `.env` + `python-dotenv` mantém `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `LANGSMITH_API_KEY` fora do controle de versão, com `.env.example` documentando quais variáveis são esperadas.
+
+## 7. Anthropic (Claude) como provider principal de LLM
+
+O SDK `anthropic` é o foco do estudo; `openai` permanece como provider secundário para comparação.
+
+**Por quê:** o objetivo do repo é aprofundar em engenharia de IA, e a Anthropic publica a documentação mais densa sobre os fundamentos práticos (prompt caching, tool use, extended thinking, citations, agentes). Os modelos Claude 4.x (Opus 4.7, Sonnet 4.6, Haiku 4.5) cobrem o espectro de custo/latência/capacidade necessário para experimentos. OpenAI fica para benchmarks lado-a-lado e para entender as diferenças de API entre os dois provedores principais — não para ser o caminho padrão.

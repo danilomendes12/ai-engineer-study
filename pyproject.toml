@@ -10,6 +10,7 @@ dependencies = [
     "openai",
     "python-dotenv",
     "tiktoken",
+    "transformers",
 ]
 
 [dependency-groups]
