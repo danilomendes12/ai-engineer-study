@@ -24,7 +24,7 @@ def call_llm(model: str = MODEL, max_tokens: int = 128, message: str = "Quais s√
     reply = "".join(b.text for b in message.content if isinstance(b, TextBlock))
     input_tokens = message.usage.input_tokens
     output_tokens = message.usage.output_tokens
-    cost_usd = calculate_cost(message.usage, "anthropic", MODEL)
+    cost_usd = calculate_cost(message.usage, "anthropic", model)
 
     print(f"Resposta:      {reply}")
     print(f"Modelo:        {MODEL}")

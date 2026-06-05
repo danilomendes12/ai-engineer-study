@@ -25,7 +25,7 @@ def call_llm(model: str = MODEL, max_tokens: int = 128, message: str = "Quais s√
     usage = response.usage
     input_tokens = usage.prompt_tokens if usage else 0
     output_tokens = usage.completion_tokens if usage else 0
-    cost_usd = calculate_cost(usage, "openai", MODEL)
+    cost_usd = calculate_cost(usage, "openai", model)
 
     print(f"Resposta:      {reply}")
     print(f"Modelo:        {MODEL}")
