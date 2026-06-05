@@ -4,27 +4,32 @@ from anthropic import Anthropic
 from anthropic.types import TextBlock
 from dotenv import load_dotenv
 from langsmith.wrappers import wrap_anthropic
+
 from accounting import calculate_cost
 
 load_dotenv()
 
 MODEL = "claude-haiku-4-5"
 
-def call_llm(model: str = MODEL, max_tokens: int = 128, message: str = "Quais são os times da copa do mundo 2026?") -> None:
+DEFAULT_MESSAGE = "Quais são os times da copa do mundo 2026?"
+
+
+def call_llm(model: str = MODEL, max_tokens: int = 128, message: str = DEFAULT_MESSAGE) -> None:
     client = wrap_anthropic(Anthropic())
 
     start = time.perf_counter()
-    message = client.messages.create(
-        model= model,
+    model_response = client.messages.create(
+        model=model,
         max_tokens=max_tokens,
         messages=[{"role": "user", "content": message}],
     )
     latency_ms = (time.perf_counter() - start) * 1000
 
-    reply = "".join(b.text for b in message.content if isinstance(b, TextBlock))
-    input_tokens = message.usage.input_tokens
-    output_tokens = message.usage.output_tokens
-    cost_usd = calculate_cost(message.usage, "anthropic", model)
+    reply = "".join(b.text for b in model_response.content if isinstance(b, TextBlock))
+
+    input_tokens = model_response.usage.input_tokens
+    output_tokens = model_response.usage.output_tokens
+    cost_usd = calculate_cost(model_response.usage, "anthropic", model)
 
     print(f"Resposta:      {reply}")
     print(f"Modelo:        {MODEL}")
