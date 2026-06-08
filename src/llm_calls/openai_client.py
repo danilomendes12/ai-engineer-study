@@ -1,4 +1,5 @@
 import time
+from collections.abc import Iterator
 
 from dotenv import load_dotenv
 from langsmith.wrappers import wrap_openai
@@ -7,7 +8,7 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from accounting import calculate_cost
 
-from .base import CallLLMFn, LLMResponse
+from .base import CallLLMFn, LLMResponse, StreamChunk
 
 load_dotenv()
 
@@ -29,9 +30,13 @@ class OpenAIProvider(CallLLMFn):
         system_prompt: str | None = None,
         temperature: float | None = None,
         top_p: float | None = None,
-        top_k: int | None = None,  # noqa: ARG002 — not supported by OpenAI
+        top_k: int | None = None,
     ) -> LLMResponse:
         client = self._client
+
+        if top_k is not None:
+            msg = "top_k is not supported by OpenAI models"
+            raise ValueError(msg)
 
         messages: list[ChatCompletionMessageParam] = []
         if system_prompt is not None:
@@ -60,6 +65,62 @@ class OpenAIProvider(CallLLMFn):
             output_tokens=output_tokens,
             cost_usd=cost_usd,
             latency_ms=latency_ms,
+        )
+
+    def __stream__(
+        self,
+        model: str,
+        input_message: str,
+        max_output_tokens: int,
+        *,
+        system_prompt: str | None = None,
+        temperature: float | None = None,
+        top_p: float | None = None,
+        top_k: int | None = None,
+    ) -> Iterator[StreamChunk]:
+        if top_k is not None:
+            msg = "top_k is not supported by OpenAI models"
+            raise ValueError(msg)
+
+        messages: list[ChatCompletionMessageParam] = []
+        if system_prompt is not None:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": input_message})
+
+        start = time.perf_counter()
+        ttft_ms: float | None = None
+        response = self._client.chat.completions.create(
+            model=model,
+            max_completion_tokens=max_output_tokens,
+            messages=messages,
+            temperature=temperature if temperature is not None else omit,
+            top_p=top_p if top_p is not None else omit,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+
+        last_usage = None
+        for chunk in response:
+            if chunk.choices:
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    if ttft_ms is None:
+                        ttft_ms = (time.perf_counter() - start) * 1000
+                    yield StreamChunk(type="delta", delta=delta)
+            if chunk.usage:
+                last_usage = chunk.usage
+
+        latency_ms = (time.perf_counter() - start) * 1000
+        input_tokens = last_usage.prompt_tokens if last_usage else 0
+        output_tokens = last_usage.completion_tokens if last_usage else 0
+        cost_usd = calculate_cost(last_usage, "openai", model) if last_usage else 0.0
+        yield StreamChunk(
+            type="done",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=cost_usd,
+            latency_ms=latency_ms,
+            ttft_ms=ttft_ms,
         )
 
 

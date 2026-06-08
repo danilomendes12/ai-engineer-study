@@ -1,4 +1,5 @@
 import time
+from collections.abc import Iterator
 
 from dotenv import load_dotenv
 from google import genai
@@ -6,7 +7,7 @@ from google.genai import types
 
 from accounting import calculate_cost
 
-from .base import CallLLMFn, LLMResponse
+from .base import CallLLMFn, LLMResponse, StreamChunk
 
 load_dotenv()
 
@@ -58,6 +59,53 @@ class GeminiProvider(CallLLMFn):
             output_tokens=output_tokens,
             cost_usd=cost_usd,
             latency_ms=latency_ms,
+        )
+
+    def __stream__(
+        self,
+        model: str,
+        input_message: str,
+        max_output_tokens: int,
+        *,
+        system_prompt: str | None = None,
+        temperature: float | None = None,
+        top_p: float | None = None,
+        top_k: int | None = None,
+    ) -> Iterator[StreamChunk]:
+        config = types.GenerateContentConfig(
+            max_output_tokens=max_output_tokens,
+            system_instruction=system_prompt,
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+        )
+
+        start = time.perf_counter()
+        ttft_ms: float | None = None
+        last_usage = None
+        for chunk in self._client.models.generate_content_stream(
+            model=model,
+            contents=input_message,
+            config=config,
+        ):
+            if chunk.text:
+                if ttft_ms is None:
+                    ttft_ms = (time.perf_counter() - start) * 1000
+                yield StreamChunk(type="delta", delta=chunk.text)
+            if chunk.usage_metadata:
+                last_usage = chunk.usage_metadata
+
+        latency_ms = (time.perf_counter() - start) * 1000
+        input_tokens = last_usage.prompt_token_count or 0 if last_usage else 0
+        output_tokens = last_usage.candidates_token_count or 0 if last_usage else 0
+        cost_usd = calculate_cost(last_usage, "gemini", model) if last_usage else 0.0
+        yield StreamChunk(
+            type="done",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=cost_usd,
+            latency_ms=latency_ms,
+            ttft_ms=ttft_ms,
         )
 
 

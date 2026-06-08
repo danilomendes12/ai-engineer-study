@@ -1,5 +1,7 @@
+from collections.abc import Iterator
+
 from .anthropic_client import AnthropicProvider
-from .base import CallLLMFn, LLMResponse
+from .base import CallLLMFn, LLMResponse, StreamChunk
 from .gemini_client import GeminiProvider
 from .openai_client import OpenAIProvider
 
@@ -35,4 +37,29 @@ def call_llm(
     )
 
 
-__all__ = ["CallLLMFn", "LLMResponse", "call_llm"]
+def stream_llm(
+    model: str,
+    input_message: str,
+    max_output_tokens: int,
+    provider: str,
+    *,
+    system_prompt: str | None = None,
+    temperature: float | None = None,
+    top_p: float | None = None,
+    top_k: int | None = None,
+) -> Iterator[StreamChunk]:
+    if provider not in _REGISTRY:
+        msg = f"Unknown provider '{provider}'. Available: {list(_REGISTRY)}"
+        raise ValueError(msg)
+    return _REGISTRY[provider].__stream__(
+        model,
+        input_message,
+        max_output_tokens,
+        system_prompt=system_prompt,
+        temperature=temperature,
+        top_p=top_p,
+        top_k=top_k,
+    )
+
+
+__all__ = ["CallLLMFn", "LLMResponse", "StreamChunk", "call_llm", "stream_llm"]

@@ -1,4 +1,5 @@
 import time
+from collections.abc import Iterator
 
 from anthropic import Anthropic, omit
 from anthropic.types import TextBlock
@@ -7,7 +8,7 @@ from langsmith.wrappers import wrap_anthropic
 
 from accounting import calculate_cost
 
-from .base import CallLLMFn, LLMResponse
+from .base import CallLLMFn, LLMResponse, StreamChunk
 
 load_dotenv()
 
@@ -56,6 +57,44 @@ class AnthropicProvider(CallLLMFn):
             output_tokens=output_tokens,
             cost_usd=cost_usd,
             latency_ms=latency_ms,
+        )
+
+    def __stream__(
+        self,
+        model: str,
+        input_message: str,
+        max_output_tokens: int,
+        *,
+        system_prompt: str | None = None,
+        temperature: float | None = None,
+        top_p: float | None = None,
+        top_k: int | None = None,
+    ) -> Iterator[StreamChunk]:
+        start = time.perf_counter()
+        ttft_ms: float | None = None
+        with self._client.messages.stream(
+            model=model,
+            max_tokens=max_output_tokens,
+            system=system_prompt if system_prompt is not None else omit,
+            messages=[{"role": "user", "content": input_message}],
+            temperature=temperature if temperature is not None else omit,
+            top_p=top_p if top_p is not None else omit,
+            top_k=top_k if top_k is not None else omit,
+        ) as s:
+            for text in s.text_stream:
+                if ttft_ms is None:
+                    ttft_ms = (time.perf_counter() - start) * 1000
+                yield StreamChunk(type="delta", delta=text)
+            final = s.get_final_message()
+
+        latency_ms = (time.perf_counter() - start) * 1000
+        yield StreamChunk(
+            type="done",
+            input_tokens=final.usage.input_tokens,
+            output_tokens=final.usage.output_tokens,
+            cost_usd=calculate_cost(final.usage, "anthropic", model),
+            latency_ms=latency_ms,
+            ttft_ms=ttft_ms,
         )
 
 
