@@ -17,22 +17,27 @@ DEFAULT_MESSAGE = "Quais são os times da copa do mundo 2026?"
 
 
 class AnthropicProvider(CallLLMFn):
+    def __init__(self) -> None:
+        self._client = wrap_anthropic(Anthropic())
+
     def __call__(
         self,
         model: str,
         input_message: str,
         max_output_tokens: int,
         *,
+        system_prompt: str | None = None,
         temperature: float | None = None,
         top_p: float | None = None,
         top_k: int | None = None,
     ) -> LLMResponse:
-        client = wrap_anthropic(Anthropic())
+        client = self._client
 
         start = time.perf_counter()
         model_response = client.messages.create(
             model=model,
             max_tokens=max_output_tokens,
+            system=system_prompt if system_prompt is not None else omit,
             messages=[{"role": "user", "content": input_message}],
             temperature=temperature if temperature is not None else omit,
             top_p=top_p if top_p is not None else omit,
@@ -58,7 +63,9 @@ call_llm: CallLLMFn = AnthropicProvider()
 
 
 if __name__ == "__main__":
-    result = call_llm(MODEL, DEFAULT_MESSAGE, 128)
+    result = call_llm(
+        MODEL, DEFAULT_MESSAGE, 1280, system_prompt="Você é um assistente útil e prestativo."
+    )
     print(f"Resposta:      {result.reply}")
     print(f"Modelo:        {MODEL}")
     print(f"Input tokens:  {result.input_tokens}")

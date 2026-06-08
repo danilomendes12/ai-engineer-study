@@ -19,6 +19,7 @@ class CallLLMFn(ABC):
         input_message: str,
         max_output_tokens: int,
         *,
+        system_prompt: str | None = None,
         temperature: float | None = None,
         top_p: float | None = None,
         top_k: int | None = None,

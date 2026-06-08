@@ -31,7 +31,7 @@ def _get_field(usage: object, *names: str) -> int | None:
 
 
 def get_usage_input_tokens(usage: object, model: str) -> int:
-    value = _get_field(usage, "input_tokens", "prompt_tokens")
+    value = _get_field(usage, "input_tokens", "prompt_tokens", "prompt_token_count")
     if value is None:
         msg = f"Input usage format not supported for model {model}"
         raise ValueError(msg)
@@ -39,7 +39,7 @@ def get_usage_input_tokens(usage: object, model: str) -> int:
 
 
 def get_usage_output_tokens(usage: object, model: str) -> int:
-    value = _get_field(usage, "output_tokens", "completion_tokens")
+    value = _get_field(usage, "output_tokens", "completion_tokens", "candidates_token_count")
     if value is None:
         msg = f"Output usage format not supported for model {model}"
         raise ValueError(msg)

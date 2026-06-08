@@ -1,9 +1,8 @@
 import time
 
 from dotenv import load_dotenv
-from langsmith.wrappers import wrap_openai
-from openai import OpenAI, omit
-from openai.types.chat import ChatCompletionMessageParam
+from google import genai
+from google.genai import types
 
 from accounting import calculate_cost
 
@@ -11,14 +10,14 @@ from .base import CallLLMFn, LLMResponse
 
 load_dotenv()
 
-MODEL = "gpt-4o-mini"
+MODEL = "gemini-2.0-flash"
 
 DEFAULT_MESSAGE = "Quais são os times da copa do mundo 2026?"
 
 
-class OpenAIProvider(CallLLMFn):
+class GeminiProvider(CallLLMFn):
     def __init__(self) -> None:
-        self._client = wrap_openai(OpenAI())
+        self._client = genai.Client()
 
     def __call__(
         self,
@@ -29,30 +28,29 @@ class OpenAIProvider(CallLLMFn):
         system_prompt: str | None = None,
         temperature: float | None = None,
         top_p: float | None = None,
-        top_k: int | None = None,  # noqa: ARG002 — not supported by OpenAI
+        top_k: int | None = None,
     ) -> LLMResponse:
-        client = self._client
-
-        messages: list[ChatCompletionMessageParam] = []
-        if system_prompt is not None:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": input_message})
+        config = types.GenerateContentConfig(
+            max_output_tokens=max_output_tokens,
+            system_instruction=system_prompt,
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+        )
 
         start = time.perf_counter()
-        model_response = client.chat.completions.create(
+        model_response = self._client.models.generate_content(
             model=model,
-            max_completion_tokens=max_output_tokens,
-            messages=messages,
-            temperature=temperature if temperature is not None else omit,
-            top_p=top_p if top_p is not None else omit,
+            contents=input_message,
+            config=config,
         )
         latency_ms = (time.perf_counter() - start) * 1000
 
-        reply = model_response.choices[0].message.content or ""
-        usage = model_response.usage
-        input_tokens = usage.prompt_tokens if usage else 0
-        output_tokens = usage.completion_tokens if usage else 0
-        cost_usd = calculate_cost(usage, "openai", model)
+        reply = model_response.text or ""
+        usage = model_response.usage_metadata
+        input_tokens = usage.prompt_token_count or 0 if usage else 0
+        output_tokens = usage.candidates_token_count or 0 if usage else 0
+        cost_usd = calculate_cost(usage, "gemini", model) if usage else 0.0
 
         return LLMResponse(
             reply=reply,
@@ -63,7 +61,7 @@ class OpenAIProvider(CallLLMFn):
         )
 
 
-call_llm: CallLLMFn = OpenAIProvider()
+call_llm: CallLLMFn = GeminiProvider()
 
 
 if __name__ == "__main__":

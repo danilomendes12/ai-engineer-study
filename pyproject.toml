@@ -13,6 +13,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "anthropic",
+    "google-genai",
     "langsmith>=0.8.5",
     "openai",
     "pgvector",
@@ -46,13 +47,14 @@ ignore = [
     "ERA001",  # permite código comentado em scripts exploratórios
     "FIX",     # permite TODO/FIXME sem falhar
     "TD",      # idem — formato livre de TODOs
+    "TC",      # não exige mover imports para TYPE_CHECKING
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "main.py" = ["S101"]  # asserts permitidos no scratch entry point
 
 [tool.ruff.lint.pylint]
-max-args = 7
+max-args = 8
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
