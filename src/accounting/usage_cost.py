@@ -1,23 +1,22 @@
-from .pricing import PRICES
+import litellm
+
+
+def _litellm_model(provider: str, model: str) -> str:
+    if provider == "gemini":
+        return f"gemini/{model}"
+    return model
 
 
 def calculate_cost(usage: object, provider: str, model: str) -> float:
-    price = get_price_from_model_and_provider(model, provider)
+    litellm_model = _litellm_model(provider, model)
     input_tokens = get_usage_input_tokens(usage, model)
     output_tokens = get_usage_output_tokens(usage, model)
-    return input_tokens / 1_000_000 * price["input"] + output_tokens / 1_000_000 * price["output"]
-
-
-def get_price_from_model_and_provider(model: str, provider: str) -> dict[str, float]:
-    provider_prices = PRICES.get(provider)
-    if provider_prices is None:
-        msg = f"Unknown provider: {provider!r}"
-        raise ValueError(msg)
-    price = provider_prices.get(model)
-    if price is None:
-        msg = f"Unknown model {model!r} for provider {provider!r}"
-        raise ValueError(msg)
-    return price
+    input_cost, output_cost = litellm.cost_per_token(
+        model=litellm_model,
+        prompt_tokens=input_tokens,
+        completion_tokens=output_tokens,
+    )
+    return input_cost + output_cost
 
 
 def _get_field(usage: object, *names: str) -> int | None:

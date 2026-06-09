@@ -13,6 +13,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "anthropic",
+    "litellm",
     "google-genai",
     "langsmith>=0.8.5",
     "openai",
@@ -27,8 +28,12 @@ dependencies = [
 dev = [
     "mypy>=2.1.0",
     "pre-commit>=4.6.0",
+    "pytest>=8.0.0",
     "ruff>=0.15.13",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff]
 target-version = "py312"
@@ -52,6 +57,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "main.py" = ["S101"]  # asserts permitidos no scratch entry point
+"tests/**/*.py" = ["S101"]  # asserts são o mecanismo de asserção do pytest
 
 [tool.ruff.lint.pylint]
 max-args = 8
