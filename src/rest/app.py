@@ -1,9 +1,10 @@
+from dataclasses import asdict
 from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 
 from db import LlmCall, LlmCallAnalytics, LlmCallRepository
-from llm_calls import call_llm
+from llm_calls import call_llm, stream_llm
 
 from .schemas import (
     CallRequest,
@@ -95,6 +96,37 @@ def get_stats(
         else None,
         daily_spend=[DailySpendSchema(date=d.date, total=d.total, count=d.count) for d in daily],
     )
+
+
+@app.websocket("/ws/stream")
+async def stream_websocket(websocket: WebSocket) -> None:
+    await websocket.accept()
+    try:
+        data = await websocket.receive_json()
+        body = CallRequest.model_validate(data)
+    except (ValueError, WebSocketDisconnect) as exc:
+        await websocket.send_json({"type": "error", "message": str(exc)})
+        await websocket.close(code=1008)
+        return
+
+    try:
+        gen = stream_llm(
+            body.model,
+            body.message,
+            body.max_tokens,
+            body.provider,
+            system_prompt=body.system_prompt,
+            temperature=body.temperature,
+            top_p=body.top_p,
+            top_k=body.top_k,
+            repository=_repo,
+        )
+        for chunk in gen:
+            await websocket.send_json(asdict(chunk))
+    except (ValueError, WebSocketDisconnect, RuntimeError) as exc:
+        await websocket.send_json({"type": "error", "message": str(exc)})
+    finally:
+        await websocket.close()
 
 
 def _to_schema(call: LlmCall) -> LlmCallSchema:
