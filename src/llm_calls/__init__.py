@@ -1,5 +1,6 @@
 from collections.abc import Generator, Iterator
 
+from accounting import estimate_partial_cost
 from db import LlmCall, LlmCallRepository
 
 from .anthropic_client import AnthropicProvider
@@ -196,16 +197,20 @@ def _persist_stream(
     finally:
         if not persisted:
             is_cancelled = exc is None or isinstance(exc, GeneratorExit)
+            partial = "".join(deltas)
+            in_tok, out_tok, cost_usd = estimate_partial_cost(
+                provider, model, prompt, system_prompt, partial
+            )
             repo.save(
                 LlmCall(
                     provider=provider,
                     model=model,
-                    input_tokens=0,
-                    output_tokens=0,
-                    cost=0.0,
+                    input_tokens=in_tok,
+                    output_tokens=out_tok,
+                    cost=cost_usd,
                     latency=0.0,
                     prompt=prompt,
-                    answer="".join(deltas),
+                    answer=partial,
                     max_tokens=max_tokens,
                     temperature=temperature,
                     top_p=top_p,
