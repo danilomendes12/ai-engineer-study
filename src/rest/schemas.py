@@ -105,3 +105,8 @@ class StatsResponse(BaseModel):
     latency: LatencyPercentilesSchema | None
     ttft: TtftPercentilesSchema | None
     daily_spend: list[DailySpendSchema]
+
+
+class ModelOptionSchema(BaseModel):
+    provider: str
+    model: str

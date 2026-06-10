@@ -5,12 +5,15 @@ from db import LlmCall, LlmCallRepository
 from .anthropic_client import AnthropicProvider
 from .base import CallLLMFn, LLMResponse, StreamChunk
 from .gemini_client import GeminiProvider
+from .models import ModelEntry, list_models
+from .ollama_client import OllamaProvider
 from .openai_client import OpenAIProvider
 
 _REGISTRY: dict[str, CallLLMFn] = {
     "anthropic": AnthropicProvider(),
     "openai": OpenAIProvider(),
     "gemini": GeminiProvider(),
+    "ollama": OllamaProvider(),
 }
 
 _DEFAULT_REPO: LlmCallRepository | None = None
@@ -214,4 +217,12 @@ def _persist_stream(
             )
 
 
-__all__ = ["CallLLMFn", "LLMResponse", "StreamChunk", "call_llm", "stream_llm"]
+__all__ = [
+    "CallLLMFn",
+    "LLMResponse",
+    "ModelEntry",
+    "StreamChunk",
+    "call_llm",
+    "list_models",
+    "stream_llm",
+]

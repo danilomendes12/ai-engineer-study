@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A personal learning/study repository for AI engineering. Code here consists of self-contained experiments and exercises against LLM provider SDKs (Anthropic, OpenAI, Gemini) — not a production application. Expect throwaway scripts and small modules over a cohesive architecture.
+A personal learning/study repository for AI engineering. Code here consists of self-contained experiments and exercises against LLM provider SDKs (Anthropic, OpenAI, Gemini, Ollama) — not a production application. Expect throwaway scripts and small modules over a cohesive architecture.
 
 ## Environment & commands
 
@@ -22,10 +22,12 @@ This project uses **uv** as the package manager and Python **3.12**.
 ## Key modules
 
 ### `src/llm_calls/`
-Abstract LLM call layer with a unified interface across three providers:
+Abstract LLM call layer with a unified interface across four providers:
 - `base.py` — `CallLLMFn` ABC, `LLMResponse` and `StreamChunk` dataclasses.
-- `anthropic_client.py`, `openai_client.py`, `gemini_client.py` — concrete implementations.
+- `anthropic_client.py`, `openai_client.py`, `gemini_client.py`, `ollama_client.py` — concrete implementations.
 - `__init__.py` — exports `call_llm(model, message, max_tokens, provider)` and `stream_llm(...)`. Both functions automatically persist every call to the SQLite repository (see below).
+
+Ollama notes: uses the OpenAI-compatible REST API (`http://localhost:11434/v1`); no API key required; `cost_usd` is always `0.0`; `top_k` is ignored (appended to `ignored_params`). Override the URL via `OLLAMA_BASE_URL`.
 
 ### `src/db/`
 Persistence and analytics layer backed by SQLite (`data/llm_calls.db`):
@@ -65,6 +67,7 @@ Backend must be running first: `uv run uvicorn rest.app:app --reload`
 Pytest suite (`uv run pytest`):
 - `tests/db/test_analytics.py` — unit tests for every analytics query using an in-memory SQLite fixture.
 - `tests/test_providers.py` — integration tests calling real provider APIs (Anthropic, OpenAI, Gemini) for both `call_llm` and `stream_llm`, and verifying persistence. Gemini is marked `xfail` to tolerate quota failures.
+- `tests/test_ollama.py` — integration tests for the Ollama provider. All tests are auto-skipped when Ollama is not reachable on port 11434 (`skipif` checks socket connectivity at collection time).
 
 ## Conventions
 

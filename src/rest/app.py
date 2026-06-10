@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.concurrency import iterate_in_threadpool
 
 from db import LlmCall, LlmCallAnalytics, LlmCallRepository
-from llm_calls import call_llm, stream_llm
+from llm_calls import call_llm, list_models, stream_llm
 
 from .schemas import (
     CallRequest,
@@ -15,6 +15,7 @@ from .schemas import (
     GenerateRequest,
     LatencyPercentilesSchema,
     LlmCallSchema,
+    ModelOptionSchema,
     StatsResponse,
     TtftPercentilesSchema,
 )
@@ -30,6 +31,11 @@ app.add_middleware(
 
 _repo = LlmCallRepository()
 _analytics = LlmCallAnalytics()
+
+
+@app.get("/models")
+def get_models() -> list[ModelOptionSchema]:
+    return [ModelOptionSchema(provider=m.provider, model=m.model) for m in list_models()]
 
 
 @app.post("/calls", status_code=201)
@@ -149,7 +155,7 @@ async def generate_websocket(websocket: WebSocket) -> None:
                         "ignored_params": chunk.ignored_params,
                     }
                 )
-    except (ValueError, WebSocketDisconnect, RuntimeError) as exc:
+    except Exception as exc:  # noqa: BLE001
         await websocket.send_json({"type": "error", "message": str(exc)})
     finally:
         gen.close()
