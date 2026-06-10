@@ -18,3 +18,6 @@ class LlmCall:
     temperature: float | None = None
     top_p: float | None = None
     top_k: int | None = None
+    ttft_ms: float | None = None
+    response_status: str | None = None
+    error_message: str | None = None

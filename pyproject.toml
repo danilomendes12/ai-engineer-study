@@ -60,7 +60,7 @@ ignore = [
 "tests/**/*.py" = ["S101"]  # asserts são o mecanismo de asserção do pytest
 
 [tool.ruff.lint.pylint]
-max-args = 8
+max-args = 9
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

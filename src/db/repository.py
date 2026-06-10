@@ -33,10 +33,13 @@ class LlmCallRepository:
                     latency     REAL    NOT NULL,
                     prompt      TEXT    NOT NULL,
                     answer      TEXT    NOT NULL,
-                    max_tokens  INTEGER,
-                    temperature REAL,
-                    top_p       REAL,
-                    top_k       INTEGER
+                    max_tokens       INTEGER,
+                    temperature      REAL,
+                    top_p            REAL,
+                    top_k            INTEGER,
+                    ttft_ms          REAL,
+                    response_status  TEXT,
+                    error_message    TEXT
                 )
             """)
 
@@ -47,8 +50,9 @@ class LlmCallRepository:
                 """
                 INSERT INTO llm_calls
                     (created_at, provider, model, input_tokens, output_tokens,
-                     cost, latency, prompt, answer, max_tokens, temperature, top_p, top_k)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     cost, latency, prompt, answer, max_tokens, temperature, top_p, top_k,
+                     ttft_ms, response_status, error_message)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     created_at,
@@ -64,6 +68,9 @@ class LlmCallRepository:
                     call.temperature,
                     call.top_p,
                     call.top_k,
+                    call.ttft_ms,
+                    call.response_status,
+                    call.error_message,
                 ),
             )
             call.id = cast("int", cursor.lastrowid)
@@ -100,4 +107,7 @@ def _row_to_llm_call(row: sqlite3.Row) -> LlmCall:
         temperature=cast("float | None", row["temperature"]),
         top_p=cast("float | None", row["top_p"]),
         top_k=cast("int | None", row["top_k"]),
+        ttft_ms=cast("float | None", row["ttft_ms"]),
+        response_status=cast("str | None", row["response_status"]),
+        error_message=cast("str | None", row["error_message"]),
     )
