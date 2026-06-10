@@ -68,6 +68,7 @@ def call_llm(
                 top_k=top_k,
                 response_status="error",
                 error_message=str(e),
+                system_prompt=system_prompt,
             )
         )
         raise
@@ -87,6 +88,7 @@ def call_llm(
             top_p=top_p,
             top_k=top_k,
             response_status="success",
+            system_prompt=system_prompt,
         )
     )
     return result
@@ -119,7 +121,16 @@ def stream_llm(
         top_k=top_k,
     )
     return _persist_stream(
-        inner, repo, provider, model, input_message, max_output_tokens, temperature, top_p, top_k
+        inner,
+        repo,
+        provider,
+        model,
+        input_message,
+        max_output_tokens,
+        system_prompt,
+        temperature,
+        top_p,
+        top_k,
     )
 
 
@@ -130,6 +141,7 @@ def _persist_stream(
     model: str,
     prompt: str,
     max_tokens: int,
+    system_prompt: str | None,
     temperature: float | None,
     top_p: float | None,
     top_k: int | None,
@@ -160,6 +172,7 @@ def _persist_stream(
                 top_k=top_k,
                 response_status="error",
                 error_message=str(e),
+                system_prompt=system_prompt,
             )
         )
         raise
@@ -181,6 +194,7 @@ def _persist_stream(
                 top_k=top_k,
                 ttft_ms=done.ttft_ms,
                 response_status="success",
+                system_prompt=system_prompt,
             )
         )
 

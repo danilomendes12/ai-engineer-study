@@ -29,3 +29,8 @@ venv/
 
 # SQLite databases
 data/*.db
+
+.claude
+
+uv.lock
+

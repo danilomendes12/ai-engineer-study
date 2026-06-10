@@ -88,3 +88,36 @@ def test_stream_persists(provider: str, model: str, repo: LlmCallRepository) -> 
     assert record.ttft_ms > 0
     assert record.response_status == "success"
     assert record.error_message is None
+
+
+SYSTEM_PROMPT = "You are a concise assistant. Answer in one sentence."
+
+
+@pytest.mark.parametrize(("provider", "model"), PROVIDERS)
+def test_call_persists_system_prompt(provider: str, model: str, repo: LlmCallRepository) -> None:
+    call_llm(
+        model,
+        SOCCER_QUESTION,
+        MAX_TOKENS,
+        provider,
+        system_prompt=SYSTEM_PROMPT,
+        repository=repo,
+    )
+    saved: list[LlmCall] = repo.list_all()
+    assert saved[0].system_prompt == SYSTEM_PROMPT
+
+
+@pytest.mark.parametrize(("provider", "model"), PROVIDERS)
+def test_stream_persists_system_prompt(provider: str, model: str, repo: LlmCallRepository) -> None:
+    list(
+        stream_llm(
+            model,
+            SOCCER_QUESTION,
+            MAX_TOKENS,
+            provider,
+            system_prompt=SYSTEM_PROMPT,
+            repository=repo,
+        )
+    )
+    saved: list[LlmCall] = repo.list_all()
+    assert saved[0].system_prompt == SYSTEM_PROMPT

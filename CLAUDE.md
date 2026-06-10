@@ -33,6 +33,21 @@ Persistence and analytics layer backed by SQLite (`data/llm_calls.db`):
 - `repository.py` — `LlmCallRepository`: `save`, `get`, `list_all`.
 - `analytics.py` — `LlmCallAnalytics`: `cost_per_call`, `latency_percentiles`, `ttft_percentiles`, `daily_spend`.
 
+### `src/rest/`
+API HTTP construída com FastAPI, exposta via uvicorn:
+- `schemas.py` — modelos Pydantic de request/response (`CallRequest`, `CallResponse`, `LlmCallSchema`, `StatsResponse` e auxiliares).
+- `app.py` — instância FastAPI com as rotas abaixo. Usa `_repo` e `_analytics` como singletons de módulo.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/calls` | Executa uma chamada LLM e persiste o resultado |
+| `GET` | `/calls` | Lista chamadas (`?model=`, `?limit=`, `?offset=`) |
+| `GET` | `/calls/{id}` | Retorna um registro específico |
+| `GET` | `/stats` | Agregações de custo, latência, TTFT e gasto diário (`?model=`, `?days=`) |
+
+Rodar localmente: `uv run uvicorn rest.app:app --reload`
+Documentação interativa: `http://localhost:8000/docs`
+
 ### `tests/`
 Pytest suite (`uv run pytest`):
 - `tests/db/test_analytics.py` — unit tests for every analytics query using an in-memory SQLite fixture.
@@ -44,5 +59,6 @@ Pytest suite (`uv run pytest`):
 - pre-commit runs `ruff check --fix`, `ruff format`, and `mypy` (all in strict mode) on every commit — code must pass all three.
 - GitHub Actions CI runs ruff + mypy on every push and PR — see `.github/workflows/ci.yml`.
 - API keys are loaded from a gitignored `.env` (use `python-dotenv`). Copy `.env.example` and fill in `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` / `LANGSMITH_API_KEY`. Never hardcode keys.
+- For REST routes, annotate return types instead of using `response_model=` (ruff FAST001 flags it as redundant).
 - **Anthropic (Claude) is the primary LLM provider**; OpenAI and Gemini are kept for comparison. Default new experiments to the `anthropic` SDK unless the exercise is explicitly cross-provider.
 - When adding a new provider, implement `CallLLMFn` in `src/llm_calls/` and register it in `_REGISTRY` in `__init__.py`.

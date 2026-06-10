@@ -39,9 +39,13 @@ class LlmCallRepository:
                     top_k            INTEGER,
                     ttft_ms          REAL,
                     response_status  TEXT,
-                    error_message    TEXT
+                    error_message    TEXT,
+                    system_prompt    TEXT
                 )
             """)
+            existing = {row[1] for row in conn.execute("PRAGMA table_info(llm_calls)")}
+            if "system_prompt" not in existing:
+                conn.execute("ALTER TABLE llm_calls ADD COLUMN system_prompt TEXT")
 
     def save(self, call: LlmCall) -> LlmCall:
         created_at = datetime.now(tz=UTC).isoformat()
@@ -51,8 +55,8 @@ class LlmCallRepository:
                 INSERT INTO llm_calls
                     (created_at, provider, model, input_tokens, output_tokens,
                      cost, latency, prompt, answer, max_tokens, temperature, top_p, top_k,
-                     ttft_ms, response_status, error_message)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     ttft_ms, response_status, error_message, system_prompt)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     created_at,
@@ -71,6 +75,7 @@ class LlmCallRepository:
                     call.ttft_ms,
                     call.response_status,
                     call.error_message,
+                    call.system_prompt,
                 ),
             )
             call.id = cast("int", cursor.lastrowid)
@@ -82,12 +87,18 @@ class LlmCallRepository:
             row = conn.execute("SELECT * FROM llm_calls WHERE id = ?", (call_id,)).fetchone()
         return _row_to_llm_call(row) if row is not None else None
 
-    def list_all(self, limit: int = 100, offset: int = 0) -> list[LlmCall]:
+    def list_all(
+        self, limit: int = 100, offset: int = 0, model: str | None = None
+    ) -> list[LlmCall]:
+        sql = "SELECT * FROM llm_calls"
+        params: list[int | str] = []
+        if model is not None:
+            sql += " WHERE model = ?"
+            params.append(model)
+        sql += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
         with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM llm_calls ORDER BY created_at DESC LIMIT ? OFFSET ?",
-                (limit, offset),
-            ).fetchall()
+            rows = conn.execute(sql, params).fetchall()
         return [_row_to_llm_call(r) for r in rows]
 
 
@@ -110,4 +121,5 @@ def _row_to_llm_call(row: sqlite3.Row) -> LlmCall:
         ttft_ms=cast("float | None", row["ttft_ms"]),
         response_status=cast("str | None", row["response_status"]),
         error_message=cast("str | None", row["error_message"]),
+        system_prompt=cast("str | None", row["system_prompt"]),
     )

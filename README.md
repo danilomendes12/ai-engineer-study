@@ -35,6 +35,7 @@ Copie `.env.example` para `.env` e preencha:
 
 ```bash
 uv run python main.py            # roda o scratch entry point
+uv run uvicorn rest.app:app --reload  # sobe a API REST
 uv run pytest                    # roda a suíte de testes
 uv run ruff check --fix          # lint
 uv run ruff format               # formatação
@@ -78,6 +79,30 @@ analytics = LlmCallAnalytics()
 print(analytics.cost_per_call(model="claude-haiku-4-5"))
 print(analytics.latency_percentiles())
 print(analytics.daily_spend(days=7))
+```
+
+### `src/rest/` — API HTTP
+
+API REST construída com [FastAPI](https://fastapi.tiangolo.com/), com schemas Pydantic e documentação interativa automática.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/calls` | Executa uma chamada LLM e persiste o resultado |
+| `GET` | `/calls` | Lista chamadas (`?model=`, `?limit=`, `?offset=`) |
+| `GET` | `/calls/{id}` | Retorna um registro específico |
+| `GET` | `/stats` | Custo, latência (p50/p90/p99), TTFT e gasto diário (`?model=`, `?days=`) |
+
+```bash
+uv run uvicorn rest.app:app --reload   # sobe o servidor
+# acesse http://localhost:8000/docs    # Swagger UI interativo
+```
+
+Exemplo de chamada:
+
+```bash
+curl -X POST http://localhost:8000/calls \
+  -H "Content-Type: application/json" \
+  -d '{"provider":"anthropic","model":"claude-haiku-4-5","message":"Olá!","max_tokens":128}'
 ```
 
 ### `tests/`

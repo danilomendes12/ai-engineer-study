@@ -22,6 +22,7 @@ dependencies = [
     "python-dotenv",
     "tiktoken",
     "transformers",
+    "fastapi[standard]",
 ]
 
 [dependency-groups]
@@ -60,7 +61,7 @@ ignore = [
 "tests/**/*.py" = ["S101", "PLR2004"]  # asserts + literal comparisons are idiomatic in pytest
 
 [tool.ruff.lint.pylint]
-max-args = 9
+max-args = 10
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

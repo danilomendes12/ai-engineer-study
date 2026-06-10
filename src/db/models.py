@@ -54,3 +54,4 @@ class LlmCall:
     ttft_ms: float | None = None
     response_status: str | None = None
     error_message: str | None = None
+    system_prompt: str | None = None
