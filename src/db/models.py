@@ -3,6 +3,39 @@ from datetime import datetime
 
 
 @dataclass
+class CostStats:
+    count: int
+    total: float
+    avg: float
+    min: float
+    max: float
+    model: str | None = None
+
+
+@dataclass
+class LatencyPercentiles:
+    p50: float
+    p90: float
+    p99: float
+    model: str | None = None
+
+
+@dataclass
+class TtftPercentiles:
+    p50: float
+    p90: float
+    p99: float
+    model: str | None = None
+
+
+@dataclass
+class DailySpend:
+    date: str
+    total: float
+    count: int
+
+
+@dataclass
 class LlmCall:
     provider: str
     model: str

@@ -1,8 +1,8 @@
 # ai-engineer-study
 
 Repositório pessoal de estudos de engenharia de IA. Contém experimentos auto-contidos
-contra SDKs de provedores de LLM — **Anthropic Claude como foco principal** e OpenAI
-como referência para comparação — além de exercícios de prompting, tokenização com
+contra SDKs de provedores de LLM — **Anthropic Claude como foco principal**, OpenAI e
+Gemini como referência para comparação — além de exercícios de prompting, tokenização com
 `tiktoken` e observabilidade com LangSmith.
 
 Cada experimento mora em `src/<tópico>/` (ex.: `src/hello_world/`) e é independente —
@@ -11,8 +11,8 @@ produto. `main.py` na raiz serve como entry point de rascunho.
 
 Stack: Python 3.12, [uv](https://docs.astral.sh/uv/) para dependências, [ruff](https://docs.astral.sh/ruff/)
 e [mypy](https://mypy.readthedocs.io/) em modo estrito, `pre-commit` rodando os três
-em cada commit, e CI no GitHub Actions executando lint + typecheck a cada push. As
-decisões técnicas estão detalhadas em [decisions.md](decisions.md).
+em cada commit, CI no GitHub Actions executando lint + typecheck a cada push, e pytest
+para a suíte de testes. As decisões técnicas estão detalhadas em [decisions.md](decisions.md).
 
 ## Setup
 
@@ -28,17 +28,65 @@ Copie `.env.example` para `.env` e preencha:
 
 - `ANTHROPIC_API_KEY` — crie em <https://console.anthropic.com/>.
 - `OPENAI_API_KEY` — crie em <https://platform.openai.com/api-keys>.
+- `GEMINI_API_KEY` — crie em <https://aistudio.google.com/apikey>.
 - `LANGSMITH_API_KEY` — ver seção [Observabilidade com LangSmith](#observabilidade-com-langsmith).
 
 ## Comandos úteis
 
 ```bash
 uv run python main.py            # roda o scratch entry point
+uv run pytest                    # roda a suíte de testes
 uv run ruff check --fix          # lint
 uv run ruff format               # formatação
 uv run mypy src                  # type check
 uv run pre-commit run --all-files
 ```
+
+## Módulos principais
+
+### `src/llm_calls/` — camada unificada de chamadas LLM
+
+Interface abstrata (`CallLLMFn`) que normaliza chamadas síncronas e streaming para três
+provedores — Anthropic, OpenAI e Gemini. Dois pontos de entrada públicos:
+
+```python
+from llm_calls import call_llm, stream_llm
+
+result = call_llm("claude-haiku-4-5", "Explique embeddings", 256, "anthropic")
+for chunk in stream_llm("gpt-4o-mini", "Explique embeddings", 256, "openai"):
+    ...
+```
+
+Ambas as funções persistem automaticamente cada chamada no banco SQLite local
+(veja `src/db/` abaixo).
+
+### `src/db/` — persistência e analytics
+
+Camada de repositório sobre SQLite (`data/llm_calls.db`):
+
+| Classe | Responsabilidade |
+|---|---|
+| `LlmCallRepository` | `save`, `get`, `list_all` — CRUD de registros de chamada |
+| `LlmCallAnalytics` | `cost_per_call`, `latency_percentiles`, `ttft_percentiles`, `daily_spend` |
+
+```python
+from db import LlmCallRepository, LlmCallAnalytics
+
+repo = LlmCallRepository()
+analytics = LlmCallAnalytics()
+
+print(analytics.cost_per_call(model="claude-haiku-4-5"))
+print(analytics.latency_percentiles())
+print(analytics.daily_spend(days=7))
+```
+
+### `tests/`
+
+- `tests/db/test_analytics.py` — testes unitários de todos os métodos de analytics com
+  banco temporário (`tmp_path`), sem dependência de API.
+- `tests/test_providers.py` — testes de integração que exercitam `call_llm` e
+  `stream_llm` contra os três provedores reais, verificando resposta e persistência.
+  Gemini é marcado `xfail` para tolerar erros de cota.
 
 ## Observabilidade com LangSmith
 

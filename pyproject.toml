@@ -57,7 +57,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "main.py" = ["S101"]  # asserts permitidos no scratch entry point
-"tests/**/*.py" = ["S101"]  # asserts são o mecanismo de asserção do pytest
+"tests/**/*.py" = ["S101", "PLR2004"]  # asserts + literal comparisons are idiomatic in pytest
 
 [tool.ruff.lint.pylint]
 max-args = 9
