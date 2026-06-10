@@ -27,8 +27,8 @@ venv/
 # OS
 .DS_Store
 
-# SQLite databases
-data/*.db
+# Data directory
+data/
 
 .claude
 
