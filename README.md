@@ -35,7 +35,8 @@ Copie `.env.example` para `.env` e preencha:
 
 ```bash
 uv run python main.py            # roda o scratch entry point
-uv run uvicorn rest.app:app --reload  # sobe a API REST
+uv run uvicorn rest.app:app --reload  # sobe a API REST (porta 8000)
+cd dashboard && pnpm dev             # sobe o dashboard (porta 3000)
 uv run pytest                    # roda a suíte de testes
 uv run ruff check --fix          # lint
 uv run ruff format               # formatação
@@ -104,6 +105,32 @@ API REST construída com [FastAPI](https://fastapi.tiangolo.com/), com schemas P
 uv run uvicorn rest.app:app --reload   # sobe o servidor
 # acesse http://localhost:8000/docs    # Swagger UI interativo
 ```
+
+### `dashboard/` — front-end Next.js
+
+Interface web construída com [Next.js 16](https://nextjs.org/), TypeScript, Tailwind CSS
+e [shadcn/ui](https://ui.shadcn.com/). Consome exclusivamente o backend FastAPI local —
+as chaves de API nunca saem do processo Python.
+
+**Páginas**
+
+| Rota | Descrição |
+|---|---|
+| `/dashboard` | Cards de custo, latência (p50/p90/p99) e TTFT; gráfico de custo por modelo; tabela paginada de chamadas com painel de detalhes |
+| `/playground` | Comparação side-by-side de até 3 modelos: streaming de tokens em tempo real, parâmetros opcionais (`temperature`, `top_p`, `top_k`, `max_tokens`) e métricas por coluna ao finalizar |
+
+**Setup e execução**
+
+```bash
+cd dashboard
+pnpm install          # instala dependências
+pnpm dev              # sobe em http://localhost:3000
+```
+
+O backend precisa estar rodando antes: `uv run uvicorn rest.app:app --reload`
+
+O endereço do backend é configurável via `NEXT_PUBLIC_API_BASE` em `dashboard/.env.local`
+(padrão: `http://localhost:8000`).
 
 Exemplo REST:
 

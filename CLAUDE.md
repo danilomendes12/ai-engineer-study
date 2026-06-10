@@ -49,6 +49,18 @@ API HTTP construída com FastAPI, exposta via uvicorn:
 Rodar localmente: `uv run uvicorn rest.app:app --reload`
 Documentação interativa: `http://localhost:8000/docs`
 
+### `dashboard/`
+Next.js 16 front-end (pnpm, TypeScript, Tailwind CSS, shadcn/ui). Connects exclusively to the FastAPI backend — API keys never leave the Python process.
+
+- `app/dashboard/` — analytics page: stat cards (cost, latency p50/p90/p99, TTFT), cost-by-model bar chart, paginated calls table with a detail sheet per row.
+- `app/playground/` — side-by-side model comparison (up to 3 models): config rail with system/user prompts and optional `temperature`, `top_p`, `top_k`, `max_tokens` params; each column streams tokens over `WS /ws/generate` and displays latency/cost/TTFT on completion.
+- `lib/config.ts` — reads `NEXT_PUBLIC_API_BASE` (default `http://localhost:8000`) and derives `WS_BASE`.
+- `lib/types.ts` — shared TypeScript types (`GenParams`, `ModelOption`, WebSocket frame shapes, REST response shapes).
+
+Run: `cd dashboard && pnpm dev` → `http://localhost:3000`
+
+Backend must be running first: `uv run uvicorn rest.app:app --reload`
+
 ### `tests/`
 Pytest suite (`uv run pytest`):
 - `tests/db/test_analytics.py` — unit tests for every analytics query using an in-memory SQLite fixture.
