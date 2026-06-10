@@ -32,7 +32,6 @@ data/
 
 .claude
 
-uv.lock
 
 # Next.js
 dashboard/.next/
