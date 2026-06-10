@@ -16,6 +16,7 @@ def _call(**kwargs: object) -> LlmCall:
         "latency": 1.0,
         "prompt": "hello",
         "answer": "world",
+        "response_status": "success",
     }
     defaults.update(kwargs)
     return LlmCall(**defaults)  # type: ignore[arg-type]
@@ -220,8 +221,8 @@ def test_daily_spend_multi_day(db: tuple[LlmCallRepository, LlmCallAnalytics]) -
         """
         INSERT INTO llm_calls
             (created_at, provider, model, input_tokens, output_tokens,
-             cost, latency, prompt, answer)
-        VALUES (?, 'anthropic', 'claude-sonnet-4-6', 10, 5, ?, 1.0, 'p', 'a')
+             cost, latency, prompt, answer, response_status)
+        VALUES (?, 'anthropic', 'claude-sonnet-4-6', 10, 5, ?, 1.0, 'p', 'a', 'success')
         """,
         rows,
     )

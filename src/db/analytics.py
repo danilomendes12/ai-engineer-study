@@ -27,10 +27,13 @@ class LlmCallAnalytics:
         return conn
 
     def cost_per_call(self, model: str | None = None) -> CostStats:
-        sql = "SELECT COUNT(*), SUM(cost), AVG(cost), MIN(cost), MAX(cost) FROM llm_calls"
+        sql = (
+            "SELECT COUNT(*), SUM(cost), AVG(cost), MIN(cost), MAX(cost)"
+            " FROM llm_calls WHERE response_status = 'success'"
+        )
         params: list[str] = []
         if model is not None:
-            sql += " WHERE model = ?"
+            sql += " AND model = ?"
             params.append(model)
         with self._connect() as conn:
             row = conn.execute(sql, params).fetchone()
@@ -44,10 +47,10 @@ class LlmCallAnalytics:
         )
 
     def latency_percentiles(self, model: str | None = None) -> LatencyPercentiles | None:
-        sql = "SELECT latency FROM llm_calls"
+        sql = "SELECT latency FROM llm_calls WHERE response_status = 'success'"
         params: list[str] = []
         if model is not None:
-            sql += " WHERE model = ?"
+            sql += " AND model = ?"
             params.append(model)
         sql += " ORDER BY latency"
         with self._connect() as conn:
@@ -77,7 +80,7 @@ class LlmCallAnalytics:
                 """
                 SELECT DATE(created_at) AS day, SUM(cost), COUNT(*)
                 FROM llm_calls
-                WHERE created_at >= DATE('now', ?)
+                WHERE response_status = 'success' AND created_at >= DATE('now', ?)
                 GROUP BY day
                 ORDER BY day DESC
                 """,

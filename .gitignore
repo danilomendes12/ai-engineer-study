@@ -34,3 +34,26 @@ data/
 
 uv.lock
 
+# Next.js
+dashboard/.next/
+dashboard/out/
+dashboard/node_modules/
+dashboard/.npm
+dashboard/.eslintcache
+dashboard/.vercel
+dashboard/next-env.d.ts
+
+# Next.js build output
+dashboard/.next/
+dashboard/out/
+
+# npm / pnpm / yarn
+dashboard/package-lock.json
+dashboard/yarn.lock
+dashboard/pnpm-lock.yaml
+dashboard/.pnp
+dashboard/.pnp.js
+
+# TypeScript
+dashboard/*.tsbuildinfo
+

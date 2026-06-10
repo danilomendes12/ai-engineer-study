@@ -1,7 +1,9 @@
+import uuid
 from dataclasses import asdict
 from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 
 from db import LlmCall, LlmCallAnalytics, LlmCallRepository
 from llm_calls import call_llm, stream_llm
@@ -11,6 +13,7 @@ from .schemas import (
     CallResponse,
     CostStatsSchema,
     DailySpendSchema,
+    GenerateRequest,
     LatencyPercentilesSchema,
     LlmCallSchema,
     StatsResponse,
@@ -18,6 +21,13 @@ from .schemas import (
 )
 
 app = FastAPI(title="LLM Study API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _repo = LlmCallRepository()
 _analytics = LlmCallAnalytics()
@@ -96,6 +106,53 @@ def get_stats(
         else None,
         daily_spend=[DailySpendSchema(date=d.date, total=d.total, count=d.count) for d in daily],
     )
+
+
+@app.websocket("/ws/generate")
+async def generate_websocket(websocket: WebSocket) -> None:
+    await websocket.accept()
+    try:
+        data = await websocket.receive_json()
+        body = GenerateRequest.model_validate(data)
+    except (ValueError, WebSocketDisconnect) as exc:
+        await websocket.send_json({"type": "error", "message": str(exc)})
+        await websocket.close(code=1008)
+        return
+
+    try:
+        gen = stream_llm(
+            body.model,
+            body.user_prompt,
+            body.params.max_tokens,
+            body.provider,
+            system_prompt=body.system_prompt,
+            temperature=body.params.temperature,
+            top_p=body.params.top_p,
+            top_k=body.params.top_k,
+            repository=_repo,
+        )
+        for chunk in gen:
+            if chunk.type == "delta" and chunk.delta is not None:
+                await websocket.send_json({"type": "token", "content": chunk.delta})
+            elif chunk.type == "done":
+                await websocket.send_json(
+                    {
+                        "type": "done",
+                        "call_id": str(uuid.uuid4()),
+                        "usage": {
+                            "input_tokens": chunk.input_tokens or 0,
+                            "output_tokens": chunk.output_tokens or 0,
+                        },
+                        "cost_usd": chunk.cost_usd or 0.0,
+                        "ttft_ms": chunk.ttft_ms or 0.0,
+                        "latency_ms": chunk.latency_ms or 0.0,
+                        "ignored_params": chunk.ignored_params,
+                    }
+                )
+    except (ValueError, WebSocketDisconnect, RuntimeError) as exc:
+        await websocket.send_json({"type": "error", "message": str(exc)})
+    finally:
+        await websocket.close()
 
 
 @app.websocket("/ws/stream")

@@ -34,9 +34,9 @@ class OpenAIProvider(CallLLMFn):
     ) -> LLMResponse:
         client = self._client
 
+        ignored: list[str] = []
         if top_k is not None:
-            msg = "top_k is not supported by OpenAI models"
-            raise ValueError(msg)
+            ignored.append("top_k")
 
         messages: list[ChatCompletionMessageParam] = []
         if system_prompt is not None:
@@ -65,6 +65,7 @@ class OpenAIProvider(CallLLMFn):
             output_tokens=output_tokens,
             cost_usd=cost_usd,
             latency_ms=latency_ms,
+            ignored_params=ignored,
         )
 
     def __stream__(
@@ -78,9 +79,9 @@ class OpenAIProvider(CallLLMFn):
         top_p: float | None = None,
         top_k: int | None = None,
     ) -> Iterator[StreamChunk]:
+        ignored: list[str] = []
         if top_k is not None:
-            msg = "top_k is not supported by OpenAI models"
-            raise ValueError(msg)
+            ignored.append("top_k")
 
         messages: list[ChatCompletionMessageParam] = []
         if system_prompt is not None:
@@ -121,6 +122,7 @@ class OpenAIProvider(CallLLMFn):
             cost_usd=cost_usd,
             latency_ms=latency_ms,
             ttft_ms=ttft_ms,
+            ignored_params=ignored,
         )
 
 

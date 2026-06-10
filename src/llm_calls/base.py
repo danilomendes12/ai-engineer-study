@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 
@@ -11,6 +11,7 @@ class LLMResponse:
     output_tokens: int
     cost_usd: float
     latency_ms: float
+    ignored_params: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -24,6 +25,7 @@ class StreamChunk:
     cost_usd: float | None = None
     latency_ms: float | None = None
     ttft_ms: float | None = None
+    ignored_params: list[str] = field(default_factory=list)
 
 
 class CallLLMFn(ABC):

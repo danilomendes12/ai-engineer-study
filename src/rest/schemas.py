@@ -16,6 +16,21 @@ class CallRequest(BaseModel):
     top_k: int | None = None
 
 
+class GenParams(BaseModel):
+    temperature: float | None = None
+    top_p: float | None = None
+    top_k: int | None = None
+    max_tokens: int = Field(default=1024, gt=0)
+
+
+class GenerateRequest(BaseModel):
+    provider: str
+    model: str
+    system_prompt: str | None = None
+    user_prompt: str
+    params: GenParams = Field(default_factory=GenParams)
+
+
 # ── Response: resultado imediato da chamada ────────────────────────────────────
 
 
