@@ -40,6 +40,7 @@ class CallResponse(BaseModel):
     output_tokens: int
     cost_usd: float
     latency_ms: float
+    ignored_params: list[str] = []
 
 
 # ── Response: registro persistido ─────────────────────────────────────────────
@@ -64,6 +65,7 @@ class LlmCallSchema(BaseModel):
     response_status: str | None = None
     error_message: str | None = None
     system_prompt: str | None = None
+    ignored_params: list[str] = []
 
 
 # ── Response: analytics ────────────────────────────────────────────────────────

@@ -26,7 +26,7 @@ export interface TokenFrame {
 
 export interface DoneFrame {
   type: "done"
-  call_id: string
+  call_id: number
   usage: Usage
   cost_usd: number
   ttft_ms: number
@@ -65,6 +65,7 @@ export interface CallRow {
   ttft_ms: number
   latency_ms: number
   status: "ok" | "error"
+  ignored_params?: string[]
 }
 
 export interface CallDetail extends CallRow {
@@ -72,4 +73,5 @@ export interface CallDetail extends CallRow {
   user_prompt: string
   params: GenParams
   response_text: string
+  ignored_params?: string[]
 }

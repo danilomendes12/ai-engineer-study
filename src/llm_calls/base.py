@@ -25,6 +25,7 @@ class StreamChunk:
     cost_usd: float | None = None
     latency_ms: float | None = None
     ttft_ms: float | None = None
+    call_id: int | None = None
     ignored_params: list[str] = field(default_factory=list)
 
 

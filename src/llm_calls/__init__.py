@@ -89,6 +89,7 @@ def call_llm(
             top_k=top_k,
             response_status="success",
             system_prompt=system_prompt,
+            ignored_params=result.ignored_params,
         )
     )
     return result
@@ -105,7 +106,7 @@ def stream_llm(
     top_p: float | None = None,
     top_k: int | None = None,
     repository: LlmCallRepository | None = None,
-) -> Iterator[StreamChunk]:
+) -> Generator[StreamChunk, None, None]:
     if provider not in _REGISTRY:
         msg = f"Unknown provider '{provider}'. Available: {list(_REGISTRY)}"
         raise ValueError(msg)
@@ -147,56 +148,70 @@ def _persist_stream(
     top_k: int | None,
 ) -> Generator[StreamChunk, None, None]:
     deltas: list[str] = []
-    done: StreamChunk | None = None
+    persisted = False
+    exc: BaseException | None = None
     try:
         for chunk in gen:
             if chunk.type == "delta" and chunk.delta:
                 deltas.append(chunk.delta)
             elif chunk.type == "done":
-                done = chunk
+                saved = repo.save(
+                    LlmCall(
+                        provider=provider,
+                        model=model,
+                        input_tokens=chunk.input_tokens or 0,
+                        output_tokens=chunk.output_tokens or 0,
+                        cost=chunk.cost_usd or 0.0,
+                        latency=chunk.latency_ms or 0.0,
+                        prompt=prompt,
+                        answer="".join(deltas),
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        top_p=top_p,
+                        top_k=top_k,
+                        ttft_ms=chunk.ttft_ms,
+                        response_status="success",
+                        system_prompt=system_prompt,
+                        ignored_params=chunk.ignored_params,
+                    )
+                )
+                persisted = True
+                chunk = StreamChunk(  # noqa: PLW2901
+                    type="done",
+                    input_tokens=chunk.input_tokens,
+                    output_tokens=chunk.output_tokens,
+                    cost_usd=chunk.cost_usd,
+                    latency_ms=chunk.latency_ms,
+                    ttft_ms=chunk.ttft_ms,
+                    call_id=saved.id,
+                    ignored_params=chunk.ignored_params,
+                )
             yield chunk
-    except Exception as e:
-        repo.save(
-            LlmCall(
-                provider=provider,
-                model=model,
-                input_tokens=0,
-                output_tokens=0,
-                cost=0.0,
-                latency=0.0,
-                prompt=prompt,
-                answer="".join(deltas),
-                max_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-                top_k=top_k,
-                response_status="error",
-                error_message=str(e),
-                system_prompt=system_prompt,
-            )
-        )
+    except BaseException as e:
+        exc = e
         raise
-
-    if done is not None:
-        repo.save(
-            LlmCall(
-                provider=provider,
-                model=model,
-                input_tokens=done.input_tokens or 0,
-                output_tokens=done.output_tokens or 0,
-                cost=done.cost_usd or 0.0,
-                latency=done.latency_ms or 0.0,
-                prompt=prompt,
-                answer="".join(deltas),
-                max_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-                top_k=top_k,
-                ttft_ms=done.ttft_ms,
-                response_status="success",
-                system_prompt=system_prompt,
+    finally:
+        if not persisted:
+            is_cancelled = exc is None or isinstance(exc, GeneratorExit)
+            repo.save(
+                LlmCall(
+                    provider=provider,
+                    model=model,
+                    input_tokens=0,
+                    output_tokens=0,
+                    cost=0.0,
+                    latency=0.0,
+                    prompt=prompt,
+                    answer="".join(deltas),
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    top_p=top_p,
+                    top_k=top_k,
+                    response_status="cancelled" if is_cancelled else "error",
+                    error_message=None if is_cancelled else str(exc),
+                    system_prompt=system_prompt,
+                )
             )
-        )
 
 
 __all__ = ["CallLLMFn", "LLMResponse", "StreamChunk", "call_llm", "stream_llm"]

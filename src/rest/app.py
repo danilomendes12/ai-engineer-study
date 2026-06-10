@@ -1,9 +1,8 @@
-import uuid
-from dataclasses import asdict
 from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import iterate_in_threadpool
 
 from db import LlmCall, LlmCallAnalytics, LlmCallRepository
 from llm_calls import call_llm, stream_llm
@@ -57,6 +56,7 @@ def create_call(body: CallRequest) -> CallResponse:
         output_tokens=result.output_tokens,
         cost_usd=result.cost_usd,
         latency_ms=result.latency_ms,
+        ignored_params=result.ignored_params,
     )
 
 
@@ -119,26 +119,26 @@ async def generate_websocket(websocket: WebSocket) -> None:
         await websocket.close(code=1008)
         return
 
+    gen = stream_llm(
+        body.model,
+        body.user_prompt,
+        body.params.max_tokens,
+        body.provider,
+        system_prompt=body.system_prompt,
+        temperature=body.params.temperature,
+        top_p=body.params.top_p,
+        top_k=body.params.top_k,
+        repository=_repo,
+    )
     try:
-        gen = stream_llm(
-            body.model,
-            body.user_prompt,
-            body.params.max_tokens,
-            body.provider,
-            system_prompt=body.system_prompt,
-            temperature=body.params.temperature,
-            top_p=body.params.top_p,
-            top_k=body.params.top_k,
-            repository=_repo,
-        )
-        for chunk in gen:
+        async for chunk in iterate_in_threadpool(gen):
             if chunk.type == "delta" and chunk.delta is not None:
                 await websocket.send_json({"type": "token", "content": chunk.delta})
             elif chunk.type == "done":
                 await websocket.send_json(
                     {
                         "type": "done",
-                        "call_id": str(uuid.uuid4()),
+                        "call_id": chunk.call_id,
                         "usage": {
                             "input_tokens": chunk.input_tokens or 0,
                             "output_tokens": chunk.output_tokens or 0,
@@ -152,37 +152,7 @@ async def generate_websocket(websocket: WebSocket) -> None:
     except (ValueError, WebSocketDisconnect, RuntimeError) as exc:
         await websocket.send_json({"type": "error", "message": str(exc)})
     finally:
-        await websocket.close()
-
-
-@app.websocket("/ws/stream")
-async def stream_websocket(websocket: WebSocket) -> None:
-    await websocket.accept()
-    try:
-        data = await websocket.receive_json()
-        body = CallRequest.model_validate(data)
-    except (ValueError, WebSocketDisconnect) as exc:
-        await websocket.send_json({"type": "error", "message": str(exc)})
-        await websocket.close(code=1008)
-        return
-
-    try:
-        gen = stream_llm(
-            body.model,
-            body.message,
-            body.max_tokens,
-            body.provider,
-            system_prompt=body.system_prompt,
-            temperature=body.temperature,
-            top_p=body.top_p,
-            top_k=body.top_k,
-            repository=_repo,
-        )
-        for chunk in gen:
-            await websocket.send_json(asdict(chunk))
-    except (ValueError, WebSocketDisconnect, RuntimeError) as exc:
-        await websocket.send_json({"type": "error", "message": str(exc)})
-    finally:
+        gen.close()
         await websocket.close()
 
 
@@ -209,4 +179,5 @@ def _to_schema(call: LlmCall) -> LlmCallSchema:
         response_status=call.response_status,
         error_message=call.error_message,
         system_prompt=call.system_prompt,
+        ignored_params=call.ignored_params,
     )

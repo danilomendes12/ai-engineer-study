@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 
@@ -55,3 +55,4 @@ class LlmCall:
     response_status: str | None = None
     error_message: str | None = None
     system_prompt: str | None = None
+    ignored_params: list[str] = field(default_factory=list)

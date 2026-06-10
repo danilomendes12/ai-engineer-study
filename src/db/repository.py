@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -46,6 +47,8 @@ class LlmCallRepository:
             existing = {row[1] for row in conn.execute("PRAGMA table_info(llm_calls)")}
             if "system_prompt" not in existing:
                 conn.execute("ALTER TABLE llm_calls ADD COLUMN system_prompt TEXT")
+            if "ignored_params" not in existing:
+                conn.execute("ALTER TABLE llm_calls ADD COLUMN ignored_params TEXT")
 
     def save(self, call: LlmCall) -> LlmCall:
         created_at = datetime.now(tz=UTC).isoformat()
@@ -55,8 +58,8 @@ class LlmCallRepository:
                 INSERT INTO llm_calls
                     (created_at, provider, model, input_tokens, output_tokens,
                      cost, latency, prompt, answer, max_tokens, temperature, top_p, top_k,
-                     ttft_ms, response_status, error_message, system_prompt)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     ttft_ms, response_status, error_message, system_prompt, ignored_params)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     created_at,
@@ -76,6 +79,7 @@ class LlmCallRepository:
                     call.response_status,
                     call.error_message,
                     call.system_prompt,
+                    json.dumps(call.ignored_params) if call.ignored_params else None,
                 ),
             )
             call.id = cast("int", cursor.lastrowid)
@@ -122,4 +126,5 @@ def _row_to_llm_call(row: sqlite3.Row) -> LlmCall:
         response_status=cast("str | None", row["response_status"]),
         error_message=cast("str | None", row["error_message"]),
         system_prompt=cast("str | None", row["system_prompt"]),
+        ignored_params=json.loads(row["ignored_params"]) if row["ignored_params"] else [],
     )
