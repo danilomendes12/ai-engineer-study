@@ -85,6 +85,8 @@ print(analytics.daily_spend(days=7))
 
 API REST construída com [FastAPI](https://fastapi.tiangolo.com/), com schemas Pydantic e documentação interativa automática.
 
+**REST**
+
 | Método | Rota | Descrição |
 |---|---|---|
 | `POST` | `/calls` | Executa uma chamada LLM e persiste o resultado |
@@ -92,17 +94,32 @@ API REST construída com [FastAPI](https://fastapi.tiangolo.com/), com schemas P
 | `GET` | `/calls/{id}` | Retorna um registro específico |
 | `GET` | `/stats` | Custo, latência (p50/p90/p99), TTFT e gasto diário (`?model=`, `?days=`) |
 
+**WebSocket**
+
+| Rota | Descrição |
+|---|---|
+| `WS /ws/stream` | Streaming de resposta LLM em tempo real. Envie o mesmo payload `CallRequest` como JSON após conectar; receba chunks `StreamChunk` até `{"type":"done"}`. |
+
 ```bash
 uv run uvicorn rest.app:app --reload   # sobe o servidor
 # acesse http://localhost:8000/docs    # Swagger UI interativo
 ```
 
-Exemplo de chamada:
+Exemplo REST:
 
 ```bash
 curl -X POST http://localhost:8000/calls \
   -H "Content-Type: application/json" \
   -d '{"provider":"anthropic","model":"claude-haiku-4-5","message":"Olá!","max_tokens":128}'
+```
+
+Exemplo WebSocket (wscat):
+
+```bash
+wscat -c ws://localhost:8000/ws/stream
+> {"provider":"anthropic","model":"claude-haiku-4-5","message":"Olá!","max_tokens":128}
+< {"type":"text","text":"Olá! ..."}
+< {"type":"done", ...}
 ```
 
 ### `tests/`

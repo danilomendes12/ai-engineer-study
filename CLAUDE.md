@@ -44,6 +44,7 @@ API HTTP construída com FastAPI, exposta via uvicorn:
 | `GET` | `/calls` | Lista chamadas (`?model=`, `?limit=`, `?offset=`) |
 | `GET` | `/calls/{id}` | Retorna um registro específico |
 | `GET` | `/stats` | Agregações de custo, latência, TTFT e gasto diário (`?model=`, `?days=`) |
+| `WS` | `/ws/stream` | Streaming de resposta LLM via WebSocket; aceita o mesmo payload `CallRequest` como JSON e devolve chunks `StreamChunk` até um `{"type":"done"}` final |
 
 Rodar localmente: `uv run uvicorn rest.app:app --reload`
 Documentação interativa: `http://localhost:8000/docs`
