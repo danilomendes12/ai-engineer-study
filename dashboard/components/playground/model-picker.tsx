@@ -112,7 +112,7 @@ export function ModelPicker({
             }
           />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-60">
           {available.map((o) => (
             <SelectItem key={keyOf(o)} value={keyOf(o)} className="font-mono text-xs">
               <span className="text-muted-foreground">{o.provider}/</span>
