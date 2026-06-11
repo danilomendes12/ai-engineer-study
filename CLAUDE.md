@@ -35,7 +35,7 @@ Persistence and analytics layer backed by SQLite (`data/llm_calls.db`):
 - `repository.py` — `LlmCallRepository`: `save`, `get`, `list_all`.
 - `analytics.py` — `LlmCallAnalytics`: `cost_per_call`, `latency_percentiles`, `ttft_percentiles`, `daily_spend`.
 
-### `src/rest/`
+### `src/api/`
 API HTTP construída com FastAPI, exposta via uvicorn:
 - `schemas.py` — modelos Pydantic de request/response (`CallRequest`, `CallResponse`, `LlmCallSchema`, `StatsResponse` e auxiliares).
 - `app.py` — instância FastAPI com as rotas abaixo. Usa `_repo` e `_analytics` como singletons de módulo.
@@ -48,7 +48,7 @@ API HTTP construída com FastAPI, exposta via uvicorn:
 | `GET` | `/stats` | Agregações de custo, latência, TTFT e gasto diário (`?model=`, `?days=`) |
 | `WS` | `/ws/stream` | Streaming de resposta LLM via WebSocket; aceita o mesmo payload `CallRequest` como JSON e devolve chunks `StreamChunk` até um `{"type":"done"}` final |
 
-Rodar localmente: `uv run uvicorn rest.app:app --reload`
+Rodar localmente: `uv run uvicorn api.app:app --reload`
 Documentação interativa: `http://localhost:8000/docs`
 
 ### `dashboard/`
@@ -61,7 +61,7 @@ Next.js 16 front-end (pnpm, TypeScript, Tailwind CSS, shadcn/ui). Connects exclu
 
 Run: `cd dashboard && pnpm dev` → `http://localhost:3000`
 
-Backend must be running first: `uv run uvicorn rest.app:app --reload`
+Backend must be running first: `uv run uvicorn api.app:app --reload`
 
 ### `tests/`
 Pytest suite (`uv run pytest`):

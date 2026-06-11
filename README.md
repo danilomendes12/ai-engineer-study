@@ -29,7 +29,7 @@ pnpm install
 Subir tudo:
 
 ```bash
-uv run uvicorn rest.app:app --reload   # API em http://localhost:8000
+uv run uvicorn api.app:app --reload   # API em http://localhost:8000
 cd dashboard && pnpm dev               # UI em http://localhost:3000
 ```
 
@@ -108,6 +108,20 @@ uv run ruff check --fix            # lint
 uv run ruff format                 # formatação
 uv run mypy src                    # type check
 uv run pre-commit run --all-files  # todos os hooks
+```
+
+## Estudo de Decoding Strategies
+
+Scripts em `src/study_scripts/`. Resultados de cada execucao salvos em `docs/results/`.
+
+| Script | O que faz |
+|---|---|
+| `temperature_sweep.py` | Sweep 0 / 0.7 / 1.5 com `gpt-4o-mini`; mede variabilidade, compara tiktoken vs API, exibe custo acumulado e decisão de modelo |
+| `provider_comparison.py` | Mesmo sweep comparando `gpt-4o-mini` vs `claude-haiku-4-5` com system prompt de mentiroso |
+
+```bash
+uv run python src/study_scripts/temperature_sweep.py
+uv run python src/study_scripts/provider_comparison.py
 ```
 
 ## Observabilidade com LangSmith
